@@ -1,0 +1,513 @@
+{
+  "x402Version": 1,
+  "name": "x402-hotel-search",
+  "description": "Pay-per-query hotel search and offer pricing over Amadeus — agents shop rooms without accounts",
+  "homepage": "https://nirholas.github.io/x402-hotel-search/",
+  "repository": "https://github.com/nirholas/x402-hotel-search",
+  "contact": "nichxbt@gmail.com",
+  "skill": "/skill.md",
+  "dataSource": {
+    "upstream": "Amadeus Self-Service API (Hotel Search)",
+    "keyed": true,
+    "envVars": [
+      "AMADEUS_CLIENT_ID",
+      "AMADEUS_CLIENT_SECRET"
+    ],
+    "fallback": "Deterministic fixtures when the keys are unset. Every response carries source:\"amadeus\"|\"fixture\" so a caller always knows which it got."
+  },
+  "payment": {
+    "protocol": "x402",
+    "asset": "USDC",
+    "note": "Pay in USDC on Base or Solana — your client picks the rail.",
+    "rails": [
+      {
+        "rail": "evm",
+        "network": "base-sepolia",
+        "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+        "facilitator": "https://x402.org/facilitator"
+      },
+      {
+        "rail": "solana",
+        "network": "solana",
+        "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+        "facilitator": "https://x402.org/facilitator"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "resource": "GET /search",
+      "description": "Hotel offers for a city and date range — hotel, room, board type, cancellation policy, total price",
+      "price": "$0.005",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "5000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "5000",
+          "mimeType": "application/json"
+        }
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cityCode": {
+            "type": "string",
+            "description": "3-letter IATA city code, e.g. NYC"
+          },
+          "checkInDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkOutDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "adults": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "default": 1
+          },
+          "rooms": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5
+          }
+        },
+        "required": [
+          "cityCode",
+          "checkInDate",
+          "checkOutDate"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "query": {
+            "type": "object"
+          },
+          "nights": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "offerId": {
+                  "type": "string",
+                  "description": "Pass to GET /offer/:offerId"
+                },
+                "source": {
+                  "enum": [
+                    "amadeus",
+                    "fixture"
+                  ]
+                },
+                "hotel": {
+                  "type": "object",
+                  "properties": {
+                    "hotelId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "rating": {
+                      "type": "number",
+                      "description": "Star rating, 0 when unknown"
+                    },
+                    "address": {
+                      "type": "object",
+                      "properties": {
+                        "cityCode": {
+                          "type": "string"
+                        },
+                        "cityName": {
+                          "type": "string"
+                        },
+                        "countryCode": {
+                          "type": "string"
+                        },
+                        "line": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "geo": {
+                      "type": "object",
+                      "properties": {
+                        "latitude": {
+                          "type": "number"
+                        },
+                        "longitude": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "amenities": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Amadeus amenity codes, e.g. WIFI, PARKING, SWIMMING_POOL"
+                    }
+                  }
+                },
+                "checkInDate": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "checkOutDate": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "nights": {
+                  "type": "integer"
+                },
+                "adults": {
+                  "type": "integer"
+                },
+                "room": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "beds": {
+                      "type": "integer"
+                    },
+                    "bedType": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "boardType": {
+                  "type": "string",
+                  "description": "ROOM_ONLY | BREAKFAST | HALF_BOARD"
+                },
+                "price": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "string"
+                    },
+                    "perNight": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "cancellation": {
+                  "type": "object",
+                  "properties": {
+                    "refundable": {
+                      "type": "boolean"
+                    },
+                    "deadline": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "policy": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "available": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "offerId",
+                "hotel",
+                "price",
+                "cancellation"
+              ]
+            }
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "source",
+          "offers",
+          "retrievedAt"
+        ]
+      }
+    },
+    {
+      "resource": "GET /offer/:offerId",
+      "description": "Priced offer detail — full room, policy, and per-night price breakdown",
+      "price": "$0.003",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "3000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "3000",
+          "mimeType": "application/json"
+        }
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "description": "An offerId from GET /search"
+          }
+        },
+        "required": [
+          "offerId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "offer": {
+            "type": "object",
+            "properties": {
+              "offerId": {
+                "type": "string",
+                "description": "Pass to GET /offer/:offerId"
+              },
+              "source": {
+                "enum": [
+                  "amadeus",
+                  "fixture"
+                ]
+              },
+              "hotel": {
+                "type": "object",
+                "properties": {
+                  "hotelId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "rating": {
+                    "type": "number",
+                    "description": "Star rating, 0 when unknown"
+                  },
+                  "address": {
+                    "type": "object",
+                    "properties": {
+                      "cityCode": {
+                        "type": "string"
+                      },
+                      "cityName": {
+                        "type": "string"
+                      },
+                      "countryCode": {
+                        "type": "string"
+                      },
+                      "line": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "geo": {
+                    "type": "object",
+                    "properties": {
+                      "latitude": {
+                        "type": "number"
+                      },
+                      "longitude": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "amenities": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Amadeus amenity codes, e.g. WIFI, PARKING, SWIMMING_POOL"
+                  }
+                }
+              },
+              "checkInDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "checkOutDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "nights": {
+                "type": "integer"
+              },
+              "adults": {
+                "type": "integer"
+              },
+              "room": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "beds": {
+                    "type": "integer"
+                  },
+                  "bedType": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              },
+              "boardType": {
+                "type": "string",
+                "description": "ROOM_ONLY | BREAKFAST | HALF_BOARD"
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "string"
+                  },
+                  "perNight": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  }
+                }
+              },
+              "cancellation": {
+                "type": "object",
+                "properties": {
+                  "refundable": {
+                    "type": "boolean"
+                  },
+                  "deadline": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "policy": {
+                    "type": "string"
+                  }
+                }
+              },
+              "available": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "offerId",
+              "hotel",
+              "price",
+              "cancellation"
+            ]
+          },
+          "priceBreakdown": {
+            "type": "object",
+            "properties": {
+              "nights": {
+                "type": "integer"
+              },
+              "perNight": {
+                "type": "string"
+              },
+              "total": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          },
+          "priceGuarantee": {
+            "type": "string"
+          },
+          "pricedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "offerId",
+          "confirmed",
+          "offer",
+          "priceBreakdown"
+        ]
+      }
+    }
+  ]
+}

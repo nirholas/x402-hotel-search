@@ -1,0 +1,690 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-hotel-search",
+    "version": "0.1.0",
+    "description": "Pay-per-query hotel search and offer pricing over the Amadeus Self-Service API. Paid routes use the x402 protocol: pay in USDC on Base or Solana, your client picks the rail. Live Amadeus data when AMADEUS_CLIENT_ID/SECRET are set, deterministic fixtures otherwise; every response carries a `source` field.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "contact": {
+      "name": "nirholas",
+      "email": "nichxbt@gmail.com",
+      "url": "https://github.com/nirholas/x402-hotel-search"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4021",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/search": {
+      "get": {
+        "summary": "Hotel offers for a city and date range (x402 paid, $0.005)",
+        "operationId": "searchHotels",
+        "parameters": [
+          {
+            "name": "cityCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "example": "NYC",
+            "description": "3-letter IATA city code"
+          },
+          {
+            "name": "checkInDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-09-15"
+          },
+          {
+            "name": "checkOutDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-09-18"
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9,
+              "default": 1
+            }
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 1
+            }
+          },
+          {
+            "name": "max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hotel offers, cheapest first",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt: { success, rail: \"evm\"|\"solana\", network, transaction, payer }",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid city code, dates out of order, or stay longer than 30 nights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "502": {
+            "description": "Amadeus upstream error (live mode only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offer/{offerId}": {
+      "get": {
+        "summary": "Priced offer detail (x402 paid, $0.003)",
+        "operationId": "getOffer",
+        "description": "Full detail and a per-night price breakdown for one offer. Live `am-` ids are time-limited by Amadeus; re-run /search if you get a 404. Fixture `fx-` ids encode their own query and never expire.",
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "fx-NYC-2026-09-15-2026-09-18-2-1-0"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Priced offer detail",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt: { success, rail: \"evm\"|\"solana\", network, transaction, payer }",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferDetail"
+                }
+              }
+            }
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "404": {
+            "description": "Unknown or expired offerId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Amadeus upstream error (live mode only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Service status and data source (free)",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "enum": [
+                        "amadeus",
+                        "fixture"
+                      ]
+                    },
+                    "rails": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cities": {
+      "get": {
+        "summary": "City codes the fixture data models by name and location (free)",
+        "operationId": "cities",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "cities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cityCode": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "country": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "summary": "x402 discovery manifest (free)",
+        "operationId": "manifest",
+        "responses": {
+          "200": {
+            "description": "Discovery manifest listing every paid resource on both rails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "x402 payment requirements — one accepted payment option (one rail). A 402 lists one of these per rail: USDC on Base and USDC on Solana.",
+        "properties": {
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "exact"
+            ]
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "base-sepolia",
+              "base",
+              "solana",
+              "solana-devnet"
+            ],
+            "description": "EVM rail: base-sepolia | base. Solana rail: solana | solana-devnet."
+          },
+          "maxAmountRequired": {
+            "type": "string",
+            "description": "Atomic USDC units (6 decimals)"
+          },
+          "resource": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "payTo": {
+            "type": "string",
+            "description": "0x… on the EVM rail, base58 on the Solana rail"
+          },
+          "maxTimeoutSeconds": {
+            "type": "integer"
+          },
+          "asset": {
+            "type": "string",
+            "description": "USDC contract address (EVM) or SPL mint (Solana)"
+          },
+          "outputSchema": {
+            "type": "object"
+          },
+          "extra": {
+            "type": "object",
+            "description": "EVM: the token EIP-712 domain. Solana: mint name/decimals plus the optional facilitator feePayer."
+          }
+        },
+        "required": [
+          "scheme",
+          "network",
+          "maxAmountRequired",
+          "resource",
+          "payTo",
+          "asset"
+        ]
+      },
+      "HotelOffer": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "description": "Pass to GET /offer/:offerId"
+          },
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "hotel": {
+            "type": "object",
+            "properties": {
+              "hotelId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "rating": {
+                "type": "number",
+                "description": "Star rating, 0 when unknown"
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "cityCode": {
+                    "type": "string"
+                  },
+                  "cityName": {
+                    "type": "string"
+                  },
+                  "countryCode": {
+                    "type": "string"
+                  },
+                  "line": {
+                    "type": "string"
+                  }
+                }
+              },
+              "geo": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                }
+              },
+              "amenities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Amadeus amenity codes, e.g. WIFI, PARKING, SWIMMING_POOL"
+              }
+            }
+          },
+          "checkInDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkOutDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "nights": {
+            "type": "integer"
+          },
+          "adults": {
+            "type": "integer"
+          },
+          "room": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "beds": {
+                "type": "integer"
+              },
+              "bedType": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "boardType": {
+            "type": "string",
+            "description": "ROOM_ONLY | BREAKFAST | HALF_BOARD"
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "string"
+              },
+              "perNight": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          },
+          "cancellation": {
+            "type": "object",
+            "properties": {
+              "refundable": {
+                "type": "boolean"
+              },
+              "deadline": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "policy": {
+                "type": "string"
+              }
+            }
+          },
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "offerId",
+          "hotel",
+          "price",
+          "cancellation"
+        ]
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ],
+            "description": "Whether this came from live Amadeus or deterministic fixtures"
+          },
+          "query": {
+            "type": "object"
+          },
+          "nights": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HotelOffer"
+            }
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "source",
+          "offers",
+          "retrievedAt"
+        ]
+      },
+      "OfferDetail": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "offer": {
+            "$ref": "#/components/schemas/HotelOffer"
+          },
+          "priceBreakdown": {
+            "type": "object",
+            "properties": {
+              "nights": {
+                "type": "integer"
+              },
+              "perNight": {
+                "type": "string"
+              },
+              "total": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          },
+          "priceGuarantee": {
+            "type": "string"
+          },
+          "pricedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "offerId",
+          "confirmed",
+          "offer",
+          "priceBreakdown"
+        ]
+      }
+    },
+    "responses": {
+      "PaymentRequired": {
+        "description": "Payment required — pay via x402 on either rail and retry with the X-PAYMENT header. `accepts` holds one entry per rail.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "x402Version": {
+                  "type": "integer"
+                },
+                "error": {
+                  "type": "string"
+                },
+                "accepts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentRequirements"
+                  }
+                }
+              }
+            },
+            "example": {
+              "x402Version": 1,
+              "error": "X-PAYMENT header required — pay in USDC on Base or Solana, your pick.",
+              "accepts": [
+                {
+                  "scheme": "exact",
+                  "network": "base-sepolia",
+                  "maxAmountRequired": "5000",
+                  "resource": "http://localhost:4021/search",
+                  "description": "Hotel offers for a city and date range — hotel, room, board type, cancellation policy, total price",
+                  "mimeType": "application/json",
+                  "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+                  "maxTimeoutSeconds": 60,
+                  "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                  "extra": {
+                    "name": "USDC",
+                    "version": "2"
+                  }
+                },
+                {
+                  "scheme": "exact",
+                  "network": "solana",
+                  "maxAmountRequired": "5000",
+                  "resource": "http://localhost:4021/search",
+                  "description": "Hotel offers for a city and date range — hotel, room, board type, cancellation policy, total price",
+                  "mimeType": "application/json",
+                  "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+                  "maxTimeoutSeconds": 60,
+                  "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "extra": {
+                    "name": "USDC",
+                    "decimals": 6
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
