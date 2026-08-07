@@ -13,6 +13,7 @@ import express from "express";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildRails, describeRails, paywall, type RoutePrices } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import { amadeusEnabled, UpstreamError } from "./amadeus.js";
 import { knownCities } from "./fixtures.js";
 import { BadRequestError, NotFoundError, getOffer, parseSearchParams, searchHotels } from "./service.js";
@@ -22,17 +23,26 @@ const rails = buildRails();
 
 const PRICES = { search: "$0.005", offer: "$0.003" } as const;
 
+/**
+ * Every paid route publishes its request and response schema inside the 402
+ * challenge, so an agent that has never seen this API can read one 402 and know
+ * how to call the route and what it will get back. `ROUTE_SCHEMAS` is generated
+ * from `public/openapi.json` (`npm run schemas`), which is what keeps the
+ * challenge and the published OpenAPI document from drifting apart.
+ */
 const routePrices: RoutePrices = {
   "GET /search": {
     price: PRICES.search,
     description:
       "Hotel offers for a city and date range — hotel, room, board type, cancellation policy, total price",
     mimeType: "application/json",
+    outputSchema: ROUTE_SCHEMAS["GET /search"],
   },
   "GET /offer/:offerId": {
     price: PRICES.offer,
     description: "Priced offer detail — full room, policy, and per-night price breakdown",
     mimeType: "application/json",
+    outputSchema: ROUTE_SCHEMAS["GET /offer/:offerId"],
   },
 };
 
