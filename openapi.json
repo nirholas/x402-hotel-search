@@ -12,7 +12,8 @@
       "name": "nirholas",
       "email": "nichxbt@gmail.com",
       "url": "https://github.com/nirholas/x402-hotel-search"
-    }
+    },
+    "x-guidance": "Pay-per-query hotel search and offer pricing over Amadeus — agents shop rooms without accounts. Every paid route answers an unpaid request with HTTP 402 and a list of accepted payments (USDC on Base or Solana — pick either), then returns the purchased artifact in the body of the same request once you retry with an X-PAYMENT header. Payment and delivery happen in one round trip; nothing is promised for later. GET /search ($0.005) returns hotel offers by city/geo GET /offer/:id ($0.003) returns priced offer detail"
   },
   "servers": [
     {
@@ -149,6 +150,18 @@
               }
             }
           }
+        },
+        "x-payment-info": {
+          "price": {
+            "mode": "fixed",
+            "currency": "USD",
+            "amount": "0.005000"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         }
       }
     },
@@ -226,6 +239,18 @@
               }
             }
           }
+        },
+        "x-payment-info": {
+          "price": {
+            "mode": "fixed",
+            "currency": "USD",
+            "amount": "0.003000"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         }
       }
     },
