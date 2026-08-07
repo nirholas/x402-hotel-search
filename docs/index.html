@@ -125,10 +125,10 @@
   <h2>Quickstart</h2>
   <pre><code># 1. Run the service (works immediately — no keys needed)
 cp .env.example .env
-npm run dev                # http://localhost:4021
+npm run dev                # http://localhost:4023
 
 # 2. See the dual-rail 402 quote (no wallet needed)
-curl -s "http://localhost:4021/search?cityCode=NYC&amp;checkInDate=2026-09-15&amp;checkOutDate=2026-09-18" \
+curl -s "http://localhost:4023/search?cityCode=NYC&amp;checkInDate=2026-09-15&amp;checkOutDate=2026-09-18" \
   | jq '.accepts[] | {network, payTo, maxAmountRequired}'
 
 # 3. Pay for real on Base Sepolia (free test USDC: faucet.circle.com)

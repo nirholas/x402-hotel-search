@@ -73,7 +73,7 @@ route with its price:
 ## 4. Your first 402
 
 ```bash
-curl -s "http://localhost:4021/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
+curl -s "http://localhost:4023/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
   | jq '.accepts[] | {network, asset, payTo, maxAmountRequired}'
 ```
 
@@ -177,14 +177,16 @@ spelled out or a fresh re-price on a candidate you are actually choosing.
 ```
 NETWORK=base                     # EVM rail: base-sepolia -> base mainnet
 SOLANA_NETWORK=mainnet-beta      # Solana rail (already the default)
-FACILITATOR_URL=https://your-mainnet-facilitator.example
+FACILITATOR_URL=https://your-mainnet-facilitator.example   # EVM rail
+SOLANA_FACILITATOR_URL=https://facilitator.payai.network    # Solana rail (default)
 PUBLIC_BASE_URL=https://hotels.example.com
 AMADEUS_HOST=https://api.amadeus.com
 ```
 
-- Use a facilitator that settles on Base mainnet (e.g. Coinbase CDP's x402
-  facilitator). Point `SOLANA_FACILITATOR_URL` at a Solana-capable facilitator if
-  it differs.
+- Facilitators are rail-specific. `FACILITATOR_URL` must settle Base mainnet
+  (e.g. Coinbase CDP's x402 facilitator); `SOLANA_FACILITATOR_URL` must settle
+  Solana and defaults to PayAI (`https://facilitator.payai.network`), since
+  x402.org does not settle Solana at all.
 - `PAY_TO_ADDRESS` and `SOLANA_PAY_TO_ADDRESS` now receive real USDC.
 - `PUBLIC_BASE_URL` makes the `resource` field in your 402 quotes match your
   public URL — agents and facilitators check it.

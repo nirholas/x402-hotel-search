@@ -29,7 +29,7 @@ only when you actually need a breakdown.
 git clone https://github.com/nirholas/x402-hotel-search
 cd x402-hotel-search && npm install
 cp .env.example .env            # ships with working payTo addresses — edit to get paid yourself
-npm run dev                     # service at http://localhost:4021
+npm run dev                     # service at http://localhost:4023
 ```
 
 No API keys needed to run it — see [Real backend](#real-backend--api-keys) below.
@@ -37,7 +37,7 @@ No API keys needed to run it — see [Real backend](#real-backend--api-keys) bel
 First 402, no wallet needed:
 
 ```bash
-curl -s "http://localhost:4021/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
+curl -s "http://localhost:4023/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
   | jq '.accepts[] | {network, payTo, maxAmountRequired}'
 ```
 

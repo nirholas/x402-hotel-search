@@ -105,7 +105,7 @@ function handleError(err: unknown, res: express.Response): void {
   }
 }
 
-const port = Number(process.env.PORT ?? 4021);
+const port = Number(process.env.PORT ?? 4023);
 app.listen(port, () => {
   console.log(`\nx402-hotel-search listening on http://localhost:${port}\n`);
   console.log("  Payment rails (USDC — the client picks):");

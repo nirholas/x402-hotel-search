@@ -5,8 +5,8 @@ Exactly what happens on the wire: 402 → pay → 200.
 ## 1. Free routes first
 
 ```bash
-curl -s http://localhost:4021/health | jq
-curl -s http://localhost:4021/cities | jq '.cities[].cityCode'
+curl -s http://localhost:4023/health | jq
+curl -s http://localhost:4023/cities | jq '.cities[].cityCode'
 ```
 
 `health.source` tells you whether this deployment is on live Amadeus data or
@@ -15,7 +15,7 @@ deterministic fixtures.
 ## 2. Hit a paid route without payment → HTTP 402
 
 ```bash
-curl -si "http://localhost:4021/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" | head -40
+curl -si "http://localhost:4023/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" | head -40
 ```
 
 You get `402 Payment Required` and a JSON body with **one payment-requirements
@@ -30,7 +30,7 @@ object per rail** — Base and Solana:
       "scheme": "exact",
       "network": "base-sepolia",
       "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search",
+      "resource": "http://localhost:4023/search",
       "description": "Hotel offers for a city and date range — hotel, room, board type, cancellation policy, total price",
       "mimeType": "application/json",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
@@ -42,7 +42,7 @@ object per rail** — Base and Solana:
       "scheme": "exact",
       "network": "solana",
       "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search",
+      "resource": "http://localhost:4023/search",
       "description": "Hotel offers for a city and date range — hotel, room, board type, cancellation policy, total price",
       "mimeType": "application/json",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
@@ -58,7 +58,7 @@ object per rail** — Base and Solana:
 on either rail. Filter to the rail you can pay:
 
 ```bash
-curl -s "http://localhost:4021/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
+curl -s "http://localhost:4023/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
   | jq '.accepts[] | select(.network | startswith("solana"))'
 ```
 
@@ -77,7 +77,7 @@ npm run client
 Under the hood it re-sends the same request as:
 
 ```bash
-curl -s "http://localhost:4021/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
+curl -s "http://localhost:4023/search?cityCode=NYC&checkInDate=2026-09-15&checkOutDate=2026-09-18" \
   -H "X-PAYMENT: <base64 signed payment payload>"
 ```
 
@@ -118,7 +118,7 @@ curl -si … | grep -i x-payment-response | cut -d' ' -f2 | base64 -d | jq
 Take an `offerId` from the search result:
 
 ```bash
-curl -s "http://localhost:4021/offer/fx-NYC-2026-09-15-2026-09-18-2-1-0" \
+curl -s "http://localhost:4023/offer/fx-NYC-2026-09-15-2026-09-18-2-1-0" \
   -H "X-PAYMENT: <base64 payload>" \
   | jq '{hotel: .offer.hotel.name, room: .offer.room.type, priceBreakdown, cancellation: .offer.cancellation.policy}'
 ```
@@ -142,7 +142,7 @@ query and never expire.
 ## Reading the search result
 
 ```bash
-curl -s "http://localhost:4021/search?cityCode=LON&checkInDate=2026-10-01&checkOutDate=2026-10-04&adults=2" \
+curl -s "http://localhost:4023/search?cityCode=LON&checkInDate=2026-10-01&checkOutDate=2026-10-04&adults=2" \
   -H "X-PAYMENT: <base64 payload>" \
   | jq '.offers[] | {name: .hotel.name, stars: .hotel.rating, total: .price.total, refundable: .cancellation.refundable}'
 ```
