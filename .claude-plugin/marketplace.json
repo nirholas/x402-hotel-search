@@ -1,0 +1,25 @@
+{
+  "name": "x402-hotel-search",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Search hotel offers by city and dates and get priced offer detail over Amadeus, paid per call in USDC via x402.",
+  "plugins": [
+    {
+      "name": "x402-hotel-search",
+      "source": "./plugins/x402-hotel-search",
+      "description": "Search hotel offers by city and dates and get priced offer detail over Amadeus, paid per call in USDC via x402.",
+      "category": "data",
+      "tags": [
+        "x402",
+        "usdc",
+        "solana",
+        "base",
+        "agentic-commerce",
+        "http-402",
+        "hotels",
+        "amadeus"
+      ]
+    }
+  ]
+}

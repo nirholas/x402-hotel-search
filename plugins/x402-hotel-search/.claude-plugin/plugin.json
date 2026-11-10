@@ -1,0 +1,21 @@
+{
+  "name": "x402-hotel-search",
+  "version": "0.1.0",
+  "description": "Search hotel offers by city and dates and get priced offer detail over Amadeus, paid per call in USDC via x402.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-hotel-search",
+  "homepage": "https://nirholas.github.io/x402-hotel-search/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "usdc",
+    "solana",
+    "base",
+    "agentic-commerce",
+    "http-402",
+    "hotels",
+    "amadeus"
+  ]
+}
